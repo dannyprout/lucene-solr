@@ -2553,7 +2553,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       else
         status = 500;
     }
+
     responseHeader.add("status",status);
+
+    rsp.setHttpHeader("QTime",String.valueOf(qtime));
     responseHeader.add("QTime",qtime);
 
     if (rsp.getToLog().size() > 0) {

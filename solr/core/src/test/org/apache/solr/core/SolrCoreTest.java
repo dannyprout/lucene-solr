@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -33,6 +34,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,8 +44,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class SolrCoreTest extends SolrTestCaseJ4 {
-  private static final String COLLECTION1 = "collection1";
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -70,6 +71,22 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     old = core.registerRequestHandler( path, handler2 );
     assertEquals( old, handler1 ); // should pop out the old one
     assertEquals( core.getRequestHandlers().get( path ), handler2 );
+  }
+
+  @Test
+  public void qTimeHttpHeader() {
+    SolrQueryRequest req = req("q", "*:*");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    h.getCore().execute(h.getCore().getRequestHandler("/select"), req, rsp);
+    Collection<String> headers = rsp.getHttpHeaders("QTime");
+    assertEquals(1, headers.size());
+    String qTimeValue = headers.iterator().next();
+    try {
+      int value = Integer.valueOf(qTimeValue);
+      assertTrue(value > 0);
+    } catch (Exception e) {
+      fail("Failed to parse qTime value as int");
+    }
   }
 
   @Test
