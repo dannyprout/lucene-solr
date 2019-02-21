@@ -42,6 +42,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -183,6 +184,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
 
   public static final String version="1.0";
+  private static final String serverTimeHeader = "Server-Timing";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Logger requestLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Request");
@@ -2638,8 +2640,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       else
         status = 500;
     }
+
     responseHeader.add("status",status);
     responseHeader.add("QTime",qtime);
+    rsp.setHttpHeader(serverTimeHeader, String.format(Locale.ROOT, "QTime;desc=\"Duration (ms) of the request handler\";dur=%d", qtime));
 
     if (rsp.getToLog().size() > 0) {
       rsp.getToLog().add("status",status);

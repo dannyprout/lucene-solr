@@ -34,6 +34,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SolrCoreTest extends SolrTestCaseJ4 {
   private static final String COLLECTION1 = "collection1";
@@ -327,8 +330,28 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     }
   }
 
-}
 
+  @Test
+  public void qTimeHttpHeader() {
+    SolrQueryRequest req = req("q", "*:*");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+
+    h.getCore().execute(h.getCore().getRequestHandler("/select"), req, rsp);
+
+    Collection<String> headers = rsp.getHttpHeaders("Server-Timing");
+    assertEquals(1, headers.size());
+
+    String metricValue = headers.iterator().next();
+
+    Pattern pattern = Pattern.compile("QTime;desc=\"Duration \\(ms\\) of the request handler\";dur=(\\d+)");
+
+    Matcher matcher = pattern.matcher(metricValue);
+    assertTrue(matcher.matches());
+
+    assertTrue(Integer.valueOf(matcher.group(1)) > 0);
+  }
+
+}
 
 
 class ClosingRequestHandler extends EmptyRequestHandler implements SolrCoreAware {
