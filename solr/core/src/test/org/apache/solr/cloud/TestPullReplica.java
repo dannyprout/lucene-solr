@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
 @Slow
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+//@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
 public class TestPullReplica extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -127,7 +127,28 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
     super.tearDown();
   }
-  
+
+  @Test
+  public void demoAddDocumentMetric() throws Exception {
+    int nrtReplicas = 0;
+    int tlogReplicas = 2;
+    int pullReplicas = 0;
+
+    int totalReplicas = nrtReplicas + tlogReplicas + pullReplicas;
+
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, nrtReplicas, tlogReplicas, pullReplicas)
+        .setMaxShardsPerNode(100)
+        .process(cluster.getSolrClient());
+
+
+    waitForState("Expected collection to be created with 1 shard ", collectionName, clusterShape(1, totalReplicas));
+
+    DocCollection docCollection = assertNumberOfReplicas(nrtReplicas, tlogReplicas, pullReplicas, false, true);
+    assertEquals(1, docCollection.getSlices().size());
+
+    cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", String.valueOf(1), "foo", "bar"));
+  }
+
   @Repeat(iterations=2) // 2 times to make sure cleanup is complete and we can create the same collection
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testCreateDelete() throws Exception {
